@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 
 public class PlayerControl : MonoBehaviour
@@ -8,27 +10,38 @@ public class PlayerControl : MonoBehaviour
     [SerializeField] private LayerMask _PlatformLayerMask;
 
     [SerializeField] private Animator _animator;
+    [SerializeField] private Animator _doorOpen;
     [SerializeField] private int _speed;
+    public int key=0;
     public int jumpVel;
     private bool _grounded = false;
-
+    private bool _crouch = false;
     
     private BoxCollider2D _boxCollider;//jump try
-    private Rigidbody2D _rb;
+    private Rigidbody2D _rb; 
+
+    [Header("HP")]
+    public int maxHealth = 100;
+    public int currentHealth;
+    public HealthBar healthBar;
 
     private void Awake()
     {
        // _boxCollider = transform.GetComponent<BoxCollider2D>();//jump try
-        _rb = transform.GetComponent<Rigidbody2D>();//jump try
+        _rb = transform.GetComponent<Rigidbody2D>();
+    }
+
+    private void Start()
+    {
+        currentHealth = maxHealth;
+        healthBar.SetMaxHealth(maxHealth);
+
     }
     private void Update()
     {
         float horiMove = Input.GetAxisRaw("Horizontal");
        // float jump = Input.GetAxisRaw("Jump");
-
-
         MovePlayer(horiMove);
-
         Vector3 Lscale = transform.localScale;
 
         #region Jump
@@ -72,11 +85,42 @@ public class PlayerControl : MonoBehaviour
         transform.localScale = Lscale;
         #endregion
 
-        //if ellen y<-8 debug.log
+        #region Crouch
+        if(Input.GetKey(KeyCode.C))
+        {
+            _crouch = true;
+            if (_crouch)
+            {
+                _animator.SetBool("canCrouch", true);
+                
+            }
+            
+        }
+       /* else
+        {
+            _animator.SetBool("canCrouch", false);
+        }*/
+        else if (Input.GetKeyUp(KeyCode.C))
+        {
+            _crouch=false;
+            _animator.SetBool("canCrouch", false);
+        }
+
+
+        #endregion
+
+        #region HP
         if (this.gameObject.transform.position.y < -8)
         {
             Debug.Log("GameOver");
+            SceneManager.LoadScene("GameOver");
         }
+
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            TakeDamage(20);
+        }
+        #endregion
     }
     private void OnCollisionEnter2D(Collision2D collision)
     {
@@ -87,10 +131,22 @@ public class PlayerControl : MonoBehaviour
             Debug.Log("ON GROUND");
         }
     }
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if(collision.gameObject.tag == "Death")
+        {
+            SceneManager.LoadScene("GameOver");
+        }
+
+        if(collision.gameObject.tag == "Key")
+        {
+            keyCount();
+            collision.gameObject.SetActive(false);
+        }
+    }
     private void MovePlayer(float horizontal)
     {
         Vector3 position = transform.position;
-
         position.x += horizontal * _speed * Time.deltaTime;
         transform.position = position;
     }
@@ -98,10 +154,25 @@ public class PlayerControl : MonoBehaviour
     private void JumpPlayer()
     {
         // float jumpVel = 20f;
-        _rb.velocity = Vector2.up * jumpVel;//jump try
+        _rb.velocity = Vector2.up * jumpVel;//jump 
         _animator.SetBool("canJump", true);
     }
+
+    private void CrouchPlayer()
+    {
+
+        _animator.SetBool("canCrouch", true);
+    }
+    private void TakeDamage(int damage)
+    {
+        currentHealth-=damage;
+        healthBar.SetHeatlh(currentHealth);
+    }
    
+    private void keyCount()
+    {
+        key += key;
+    }
     //jump try
     /*private bool isGrounded()
     {
